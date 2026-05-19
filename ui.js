@@ -11,6 +11,7 @@
 const I18N = {
     ru: {
         start: "НАЧАТЬ",
+        back_btn: "◀ Назад",
         tagline: "Через телескоп ты увидишь то, что 600 лет назад Улугбек видел через секстант. Только намного больше.",
         map_title: "КАРТА",
         score_label: "Очки",
@@ -27,10 +28,25 @@ const I18N = {
         win_continue: "ДАЛЕЕ »",
         win_finish: "ЗАВЕРШИТЬ",
         finish_title: "МИССИЯ ЗАВЕРШЕНА",
-        finish_subtitle: "Ты прошёл все 10 созвездий"
+        finish_subtitle: "Ты прошёл все 10 созвездий",
+        // Error/alert messages
+        err_title: "ОШИБКА",
+        warn_title: "ВНИМАНИЕ",
+        err_wrong_shape: "Неверная форма!\n\nНужна звезда с {n} концами.",
+        err_shape_too_far: "Звезда не найдена!\n\nПеретащите ближе к пунктирной форме.",
+        err_trace_left_line: "Вы вышли за линию!\n\nПопробуй снова",
+        err_wrong_brightness: "Неверный порядок!\n\nНажимайте от тусклых к ярким.\n\nПопробуй снова",
+        err_not_odd_one: "Это обычная звезда!\n\nНайдите уникальную.\n\nПопробуй снова",
+        err_wrong_star: "Неверная звезда!\n\nПопробуй снова",
+        // Exit modal
+        exit_title: "ВЫЙТИ ИЗ ИГРЫ?",
+        exit_msg: "Текущий прогресс может не сохраниться.",
+        yes: "ДА",
+        no: "НЕТ"
     },
     uz: {
         start: "BOSHLASH",
+        back_btn: "◀ Orqaga",
         tagline: "Teleskop orqali sen 600 yil oldin Ulug'bek sekstant orqali ko'rganini ko'rasan. Faqat ancha kattaroq.",
         map_title: "XARITA",
         score_label: "Ochkolar",
@@ -47,10 +63,25 @@ const I18N = {
         win_continue: "DAVOM »",
         win_finish: "YAKUNLASH",
         finish_title: "MISSIYA YAKUNLANDI",
-        finish_subtitle: "Sen barcha 10 ta yulduz turkumini o'tding"
+        finish_subtitle: "Sen barcha 10 ta yulduz turkumini o'tding",
+        // Error/alert messages
+        err_title: "XATO",
+        warn_title: "DIQQAT",
+        err_wrong_shape: "Noto'g'ri shakl!\n\n{n} uchli yulduz kerak.",
+        err_shape_too_far: "Yulduz topilmadi!\n\nPunktirli shaklga yaqinroq tashlang.",
+        err_trace_left_line: "Chiziqdan chiqib ketdingiz!\n\nQayta urinib ko'ring",
+        err_wrong_brightness: "Noto'g'ri tartib!\n\nXiradan yorqingacha bosing.\n\nQayta urinib ko'ring",
+        err_not_odd_one: "Bu oddiy yulduz!\n\nNoyobini toping.\n\nQayta urinib ko'ring",
+        err_wrong_star: "Noto'g'ri yulduz!\n\nQayta urinib ko'ring",
+        // Exit modal
+        exit_title: "O'YINDAN CHIQASIZMI?",
+        exit_msg: "Joriy taraqqiyot saqlanmasligi mumkin.",
+        yes: "HA",
+        no: "YO'Q"
     },
     en: {
         start: "START",
+        back_btn: "◀ Back",
         tagline: "Through a telescope, you'll see what Ulugbek saw through his sextant 600 years ago — only much more.",
         map_title: "MAP",
         score_label: "Score",
@@ -67,7 +98,21 @@ const I18N = {
         win_continue: "NEXT »",
         win_finish: "FINISH",
         finish_title: "MISSION COMPLETE",
-        finish_subtitle: "You completed all 10 constellations"
+        finish_subtitle: "You completed all 10 constellations",
+        // Error/alert messages
+        err_title: "ERROR",
+        warn_title: "HEADS UP",
+        err_wrong_shape: "Wrong shape!\n\nYou need a star with {n} points.",
+        err_shape_too_far: "Star not found!\n\nDrop closer to the dotted shape.",
+        err_trace_left_line: "You left the line!\n\nTry again",
+        err_wrong_brightness: "Wrong order!\n\nTap from dimmest to brightest.\n\nTry again",
+        err_not_odd_one: "That's a regular star!\n\nFind the unique one.\n\nTry again",
+        err_wrong_star: "Wrong star!\n\nTry again",
+        // Exit modal
+        exit_title: "QUIT GAME?",
+        exit_msg: "Your current progress may not be saved.",
+        yes: "YES",
+        no: "NO"
     }
 };
 
@@ -99,10 +144,16 @@ function applyLanguage() {
         refreshVictoryModalText();
     }
 
-    // Update HUD radar text if active
+    // Update HUD radar text if game is active
     const radarEl = document.getElementById('radar-msg');
-    if (radarEl && isScanning && isGameActive) {
-        radarEl.innerText = t('scanning');
+    if (radarEl && isGameActive) {
+        if (isScanning) {
+            radarEl.innerText = t('scanning');
+        } else if (window.currentLevelMode) {
+            // Re-translate the current mode's instruction
+            const modeKey = 'instr_' + window.currentLevelMode;
+            radarEl.innerText = t(modeKey);
+        }
     }
 }
 
@@ -266,20 +317,9 @@ function createShapesBar() {
 
     const bar = document.createElement('div');
     bar.id = 'shapes-bar';
-    bar.style.cssText =
-        'position: fixed;' +
-        'bottom: 100px;' +
-        'left: 50%;' +
-        'transform: translateX(-50%);' +
-        'display: flex;' +
-        'gap: 20px;' +
-        'background: linear-gradient(135deg, rgba(26,26,46,0.95), rgba(15,15,30,0.95));' +
-        'padding: 20px 30px;' +
-        'border-radius: 25px;' +
-        'border: 3px solid #00d2ff;' +
-        'box-shadow: 0 10px 40px rgba(0,210,255,0.5);' +
-        'z-index: 200;' +
-        'backdrop-filter: blur(10px);';
+    bar.className = 'shapes-bar';
+    // All styles live in index.html CSS now (so media queries can override
+    // size and position for short landscape phones).
 
     const pointCounts = [4, 5, 6, 7, 8];
 
@@ -287,6 +327,7 @@ function createShapesBar() {
         const icon = createShinyShapeIcon(points);
         icon.dataset.points = points;
         icon.draggable = true;
+        icon.className = 'shape-icon';
 
         icon.ondragstart = function (e) {
             modeState.selectedShape = points;
@@ -311,11 +352,15 @@ function createShapesBar() {
 
             const clone = icon.cloneNode(true);
             clone.id = 'drag-clone';
+            // Match the live icon size so the drag preview isn't bigger than the bar
+            const rect = icon.getBoundingClientRect();
             clone.style.position = 'fixed';
             clone.style.pointerEvents = 'none';
             clone.style.zIndex = '1000';
-            clone.style.left = (touchStartX - 40) + 'px';
-            clone.style.top = (touchStartY - 40) + 'px';
+            clone.style.width = rect.width + 'px';
+            clone.style.height = rect.height + 'px';
+            clone.style.left = (touchStartX - rect.width / 2) + 'px';
+            clone.style.top = (touchStartY - rect.height / 2) + 'px';
             document.body.appendChild(clone);
         }, { passive: true });
 
@@ -323,8 +368,9 @@ function createShapesBar() {
             const clone = document.getElementById('drag-clone');
             if (clone) {
                 const touch = e.touches[0];
-                clone.style.left = (touch.clientX - 40) + 'px';
-                clone.style.top = (touch.clientY - 40) + 'px';
+                const rect = clone.getBoundingClientRect();
+                clone.style.left = (touch.clientX - rect.width / 2) + 'px';
+                clone.style.top = (touch.clientY - rect.height / 2) + 'px';
             }
         }, { passive: true });
 
@@ -348,15 +394,8 @@ function createShapesBar() {
 
 function createShinyShapeIcon(points) {
     const container = document.createElement('div');
-    container.style.cssText =
-        'width: 80px;' +
-        'height: 80px;' +
-        'cursor: grab;' +
-        'position: relative;' +
-        'transition: all 0.3s ease;' +
-        'display: flex;' +
-        'align-items: center;' +
-        'justify-content: center;';
+    // Sizing is now controlled by .shape-icon CSS (responsive via media queries).
+    // The internal canvas keeps drawing at 80x80; CSS scales the container.
 
     container.onmouseenter = function () {
         container.style.transform = 'scale(1.2) rotate(5deg)';
@@ -368,6 +407,8 @@ function createShinyShapeIcon(points) {
     const canvas = document.createElement('canvas');
     canvas.width = 80;
     canvas.height = 80;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
     const ctx = canvas.getContext('2d');
     const cx = 40, cy = 40;
     const outerR = 30;
@@ -457,10 +498,11 @@ function showCustomAlert(message, type, title) {
         type === 'success' ? '✅' :
         type === 'error'   ? '❌' :
         type === 'warning' ? '⚠️' : 'ℹ️';
+    // Default titles fall back to i18n if available, else hardcoded ru
     const defaultTitle =
-        type === 'success' ? 'УСПЕХ!' :
-        type === 'error'   ? 'ОШИБКА!' :
-        type === 'warning' ? 'ВНИМАНИЕ!' : "ИНФОРМАЦИЯ";
+        type === 'error'   ? (typeof t === 'function' ? t('err_title')  : 'ОШИБКА') :
+        type === 'warning' ? (typeof t === 'function' ? t('warn_title') : 'ВНИМАНИЕ') :
+        type === 'success' ? 'OK' : 'i';
 
     const overlay = document.createElement('div');
     overlay.id = 'custom-alert-overlay';

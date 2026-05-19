@@ -253,10 +253,11 @@ function tryPlaceShape(screenX, screenY) {
         if (closestStar.userData.points === modeState.selectedShape) {
             fillDashedStar(closestStar);
         } else {
-            showCustomAlert('Неверная форма!\n\nНужна звезда с ' + closestStar.userData.points + ' концами.', 'error', 'ОШИБКА');
+            const msg = t('err_wrong_shape').replace('{n}', closestStar.userData.points);
+            showCustomAlert(msg, 'error');
         }
     } else {
-        showCustomAlert('Звезда не найдена!\n\nПеретащите ближе к пунктирной форме.', 'warning', 'ВНИМАНИЕ');
+        showCustomAlert(t('err_shape_too_far'), 'warning');
     }
     modeState.selectedShape = null;
 }
@@ -478,10 +479,10 @@ function onMove(e) {
         const camVec = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
 
         if (camVec.distanceTo(targetVec) < 0.8) {
-            document.getElementById('radar-msg').innerText = "НАЙДЕНО! (Нажмите на звезду)";
+            document.getElementById('radar-msg').innerText = t('found');
             document.getElementById('radar-msg').style.color = "#00ff00";
         } else {
-            document.getElementById('radar-msg').innerText = "Ищите звезды...";
+            document.getElementById('radar-msg').innerText = t('searching');
             document.getElementById('radar-msg').style.color = "gold";
         }
     } else {
@@ -689,7 +690,7 @@ function handleTraceMove(x, y) {
 }
 
 function failTrace() {
-    showCustomAlert('Вы вышли за линию!\n\nПопробуй снова', 'error', 'ОШИБКА');
+    showCustomAlert(t('err_trace_left_line'), 'error');
     /* lives removed in STTM build */
     if (modeState.currentFreehandLine) {
         scene.remove(modeState.currentFreehandLine);
@@ -804,7 +805,7 @@ function handleBrightnessClick() {
                 setTimeout(() => { showVictoryModal(state.currentLevelIndex); }, 800);
             }
         } else {
-            showCustomAlert('Неверный порядок!\n\nНажимайте от тусклых к ярким.\n\nПопробуй снова', 'error', 'ОШИБКА');
+            showCustomAlert(t('err_wrong_brightness'), 'error');
             /* lives removed in STTM build — on error, just reset the brightness sequence */
             modeState.brightnessClicked = 0;
             stars.forEach(s => { s.material.color.setHex(0xffffff); s.scale.set(6, 6, 1); });
@@ -833,7 +834,7 @@ function handleOddOneClick() {
             isGameActive = false;
             setTimeout(() => { showVictoryModal(state.currentLevelIndex); }, 1000);
         } else {
-            showCustomAlert('Это обычная звезда!\n\nНайдите уникальную.\n\nПопробуй снова', 'error', 'ОШИБКА');
+            showCustomAlert(t('err_not_odd_one'), 'error');
             /* lives removed in STTM build */
             /* game-over-by-lives block removed in STTM build */
         }
@@ -849,23 +850,26 @@ function enterConnectMode(pos) {
     const data = LEVELS[state.currentLevelIndex];
     const mode = data.mode;
 
+    // Store current mode in a global so applyLanguage can re-translate the radar text on language switch
+    window.currentLevelMode = mode;
+
     let instructionText = "";
     switch (mode) {
         case 'classic':
-            instructionText = "СОЕДИНЯЙТЕ ПО ПОРЯДКУ (1 → 2 → 3...)";
+            instructionText = t('instr_classic');
             break;
         case 'shape':
-            instructionText = "НАЙДИТЕ ЗВЕЗДУ ПО ФОРМЕ";
+            instructionText = t('instr_shape');
             createShapesBar();
             break;
         case 'trace':
-            instructionText = "ПРОВЕДИТЕ ТОЧНУЮ ЛИНИЮ МЕЖДУ ЗВЕЗДАМИ";
+            instructionText = t('instr_trace');
             break;
         case 'brightness':
-            instructionText = "НАЖИМАЙТЕ ОТ ТУСКЛЫХ К ЯРКИМ";
+            instructionText = t('instr_brightness');
             break;
         case 'odd_one':
-            instructionText = "НАЙДИТЕ ЛИШНЮЮ ЗВЕЗДУ!";
+            instructionText = t('instr_odd_one');
             break;
     }
 
@@ -918,5 +922,5 @@ function handleGameError() {
     }
     /* lives removed in STTM build — error is now soft (sfx + alert, no penalty) */
 
-    showCustomAlert("Неверная звезда!\n\nПопробуй снова", "error");
+    showCustomAlert(t('err_wrong_star'), 'error');
 }
