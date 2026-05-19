@@ -515,6 +515,15 @@ function createSuperStarTexture() {
 function onMove(e) {
     if (!isGameActive) return;
     if (typeof alertActive !== 'undefined' && alertActive) return; // alert open — ignore game moves
+
+    // Skip move handling when the touch started on a UI control
+    const target = e.target;
+    if (target && target.closest) {
+        if (target.closest('button, a, input, select, textarea, .lang-switcher, #custom-alert-overlay, #exit-modal, #level-win-overlay')) {
+            return;
+        }
+    }
+
     if (e.type === 'touchmove') e.preventDefault();
     const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
@@ -549,11 +558,22 @@ function onPointerDown(e) {
     if (!isGameActive) return;
     if (typeof alertActive !== 'undefined' && alertActive) return; // alert open — ignore game clicks
 
+    // If the user tapped a real UI control (button, link, input, lang-switcher etc.),
+    // let the browser handle it normally. Don't preventDefault, don't raycast,
+    // don't do any game logic.
+    const target = e.target;
+    if (target && target.closest) {
+        if (target.closest('button, a, input, select, textarea, .lang-switcher, .shapes-bar, #custom-alert-overlay, #exit-modal, #level-win-overlay')) {
+            return;
+        }
+    }
+
     // Android Chrome fires touchstart → then ~300ms later fires a synthetic
     // mousedown at the LAST KNOWN pointer position. If the finger moved at all
     // between touchstart and lift-off, the synthetic mousedown lands in the
     // wrong place, raycaster misses, and we get a false "wrong answer" error.
     // preventDefault() on the touch event suppresses synthetic mouse emulation.
+    // Only do this on game-area taps — UI taps already returned above.
     if (e.type === 'touchstart' && e.cancelable) {
         e.preventDefault();
     }
