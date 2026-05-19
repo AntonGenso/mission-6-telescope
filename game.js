@@ -45,10 +45,19 @@ let modeState = {
 // INITIALIZATION
 // ========================================
 
+function getResponsiveFov() {
+    const aspect = window.innerWidth / window.innerHeight;
+    // Landscape (aspect > 1): standard FOV 75°
+    // Portrait (aspect < 1): scale FOV up so constellations stay visible
+    // At aspect 0.5 (very narrow): FOV becomes ~100°
+    if (aspect >= 1) return 75;
+    return Math.min(100, 75 / aspect * 0.75);
+}
+
 function initThree() {
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000000, 0.001);
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(getResponsiveFov(), window.innerWidth / window.innerHeight, 0.1, 1000);
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     // Cap DPR at 2 to avoid huge GPU load on retina phones
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -896,6 +905,7 @@ function resizeRenderer() {
     const w = window.innerWidth;
     const h = window.innerHeight;
     camera.aspect = w / h;
+    camera.fov = getResponsiveFov();
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
 }

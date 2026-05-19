@@ -1083,54 +1083,6 @@
         }
 
         /* ============================================
-           ROTATE-PROMPT — shown when device is in portrait.
-           Covers everything: full-screen, max z-index,
-           game underneath cannot be interacted with.
-           ============================================ */
-        #rotate-prompt {
-            display: none;
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            background: #050510;
-            z-index: 99999;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #ffd700;
-            font-family: 'Cinzel', serif;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        @media (orientation: portrait) {
-            #rotate-prompt {
-                display: flex;
-            }
-        }
-
-        .rotate-icon {
-            margin-bottom: 30px;
-            animation: rotate-hint 2.5s ease-in-out infinite;
-            transform-origin: center;
-        }
-
-        @keyframes rotate-hint {
-            0%, 100% { transform: rotate(0deg); }
-            40%, 60% { transform: rotate(-90deg); }
-        }
-
-        .rotate-text {
-            font-size: 1.4rem;
-            letter-spacing: 0.3em;
-            text-shadow: 0 0 15px #ffd700;
-            font-weight: 700;
-        }
-
-        /* ============================================
            SHAPES BAR — for the shape-matching game mode.
            Default: horizontal pill at the bottom-center.
            On short landscape phones: vertical strip on the right.
@@ -1274,29 +1226,199 @@
                 top: calc(max(env(safe-area-inset-top), 12px) + 30px);
             }
         }
+
+        /* ===================================================
+           PORTRAIT MOBILE — phones/tablets in portrait.
+           Activates when height > width AND width <= 900px
+           (so a narrow desktop window doesn't trigger this).
+           All overrides are mobile-portrait-specific tweaks.
+           =================================================== */
+        @media (orientation: portrait) and (max-width: 900px) {
+
+            /* --- LANG SWITCHER: smaller, top-left --- */
+            .lang-btn {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+                min-width: 28px;
+            }
+
+            /* --- HUD: keep score/level visible, smaller text --- */
+            .level-badge-game {
+                font-size: 0.85rem;
+                padding: 4px 9px;
+                /* sit below lang-switcher */
+                top: calc(max(env(safe-area-inset-top), 12px) + 36px);
+            }
+
+            .game-coin-badge {
+                font-size: 0.85rem;
+                padding: 4px 9px;
+            }
+
+            .mute-btn {
+                width: 32px;
+                height: 32px;
+                padding: 5px;
+                font-size: 0.8rem;
+            }
+
+            .back-btn {
+                padding: 7px 16px;
+                font-size: 0.9rem;
+            }
+
+            .radar-text {
+                font-size: 1rem;
+                bottom: max(env(safe-area-inset-bottom), 80px); /* leave space for shapes-bar */
+                padding: 0 16px;
+            }
+
+            /* --- MAP SCREEN: vertical column of levels --- */
+            .map-header {
+                margin-top: max(env(safe-area-inset-top), 50px);
+                padding: 0 16px;
+                max-width: 100%;
+            }
+            .map-header h2 {
+                font-size: 1.3rem;
+            }
+            .map-container {
+                /* Single column — 10 nodes stacked vertically */
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+                max-width: 100%;
+                width: 100%;
+                max-height: calc(100dvh - 160px);
+                overflow-y: auto;
+                align-items: center;
+                /* override grid that's in the default rule */
+                grid-template-columns: none;
+                grid-template-rows: none;
+            }
+            .level-node {
+                width: 70px;
+                height: 70px;
+                margin-top: 0 !important; /* override zig-zag offset from landscape */
+            }
+            /* hide the small connector dots — they don't make sense in a column */
+            .level-node::after {
+                display: none !important;
+            }
+
+            /* --- INTRO: tighter padding so text + button fit on tall narrow screens --- */
+            #screen-intro h1 {
+                font-size: 1.8rem;
+                margin: 10px 0;
+            }
+            #screen-intro .intro-tagline {
+                font-size: 0.95rem !important;
+                line-height: 1.4;
+                padding: 0 18px;
+            }
+            #screen-intro .btn-main {
+                padding: 14px 40px;
+                font-size: 1rem;
+                margin-top: 20px;
+            }
+
+            /* --- VICTORY MODAL: vertical layout, compact --- */
+            .level-win-card {
+                padding: 22px 18px;
+                width: 92%;
+                max-height: 85dvh;
+            }
+            .win-constellation-name {
+                font-size: 1.7rem !important;
+                letter-spacing: 1.5px;
+            }
+            .win-constellation-desc {
+                font-size: 0.95rem;
+            }
+            .win-fact-box {
+                padding: 12px 14px;
+                margin: 14px 0;
+            }
+            .win-fact-title {
+                font-size: 0.85rem;
+            }
+            .win-fact-text {
+                font-size: 0.9rem;
+                line-height: 1.5;
+            }
+            .win-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .win-btn-continue,
+            .win-btn-quit {
+                width: 100%;
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            .win-sparkle {
+                display: none;
+            }
+
+            /* --- SHAPES BAR: horizontal at bottom, smaller --- */
+            .shapes-bar {
+                bottom: max(env(safe-area-inset-bottom), 16px);
+                top: auto;
+                right: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                flex-direction: row;
+                gap: 8px;
+                padding: 10px 14px;
+                border-radius: 18px;
+            }
+            .shape-icon {
+                width: 44px;
+                height: 44px;
+            }
+            .shape-icon:hover {
+                transform: none !important; /* no hover-scale on touch */
+            }
+
+            /* --- EXIT MODAL: compact text --- */
+            #exit-modal .badge-card {
+                padding: 24px 20px;
+                max-width: 90%;
+            }
+            #exit-modal h2 {
+                font-size: 1.3rem;
+            }
+
+            /* --- CUSTOM ALERT (errors): make sure OK button is big enough --- */
+            .custom-alert-box {
+                max-width: 90% !important;
+                padding: 20px !important;
+            }
+            .alert-button {
+                padding: 12px 28px !important;
+                font-size: 1rem !important;
+                min-width: 110px !important;
+            }
+        }
+
+        /* Very tall narrow phones (e.g. 360x780) — squeeze a bit more */
+        @media (orientation: portrait) and (max-width: 400px) {
+            #screen-intro h1 {
+                font-size: 1.5rem;
+            }
+            #screen-intro .intro-tagline {
+                font-size: 0.85rem !important;
+            }
+            .level-node {
+                width: 60px;
+                height: 60px;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <!-- Rotate prompt — visible whenever height > width (CSS media query handles toggling) -->
-    <div id="rotate-prompt">
-        <svg class="rotate-icon" viewBox="0 0 100 100" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
-            <!-- Phone rectangle in portrait orientation -->
-            <rect x="35" y="15" width="30" height="55" rx="4" ry="4"
-                  fill="none" stroke="#ffd700" stroke-width="2.5"/>
-            <!-- Speaker line -->
-            <line x1="45" y1="22" x2="55" y2="22" stroke="#ffd700" stroke-width="1.5"/>
-            <!-- Home button -->
-            <circle cx="50" cy="63" r="2" fill="#ffd700"/>
-            <!-- Rotation arrow (curved) -->
-            <path d="M 25 78 Q 50 92 75 78"
-                  fill="none" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>
-            <!-- Arrowhead at the end of the curve -->
-            <polygon points="75,78 70,73 70,83" fill="#ffd700"/>
-        </svg>
-        <div class="rotate-text">ROTATE</div>
-    </div>
-
     <div id="bg-canvas"></div>
 
     <!-- Language switcher — always visible, takes precedence over INIT message from platform -->
