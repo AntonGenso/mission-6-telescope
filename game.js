@@ -18,6 +18,16 @@ let scene, camera, renderer, starField, group;
 let stars = [], lines = [], accumulatedLines = [], connected = 0;
 let isGameActive = false, isScanning = true;
 let mouse = { x: 0, y: 0 };
+
+// Touch-friendly raycaster threshold. Coarse-pointer devices (phones, tablets)
+// get a larger hit radius so finger taps are forgiving.
+function _pointsThreshold() {
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+        return 5.0;
+    }
+    return 3.0;
+}
+
 let raycaster = new THREE.Raycaster();
 
 let modeState = {
@@ -152,9 +162,11 @@ function setupLevel(idx) {
 // ========================================
 
 function setupClassicMode(data) {
+    const aspect = window.innerWidth / window.innerHeight;
+    const scale = aspect >= 1 ? 4 : 2.8;
     data.stars.forEach((s, i) => {
         const sprite = createSuperStarTexture();
-        sprite.position.set(data.pos.x + s.x * 4, data.pos.y + s.y * 4, data.pos.z);
+        sprite.position.set(data.pos.x + s.x * scale, data.pos.y + s.y * scale, data.pos.z);
         sprite.scale.set(6, 6, 1);
 
         gsap.to(sprite.scale, {
@@ -172,13 +184,16 @@ function setupClassicMode(data) {
 // ========================================
 
 function setupShapeMode(data) {
+    const aspect = window.innerWidth / window.innerHeight;
+    const scale = aspect >= 1 ? 6 : 4;
+
     const pointCounts = [4, 5, 6, 7, 8];
     const shuffled = pointCounts.sort(() => Math.random() - 0.5);
 
     shuffled.slice(0, 5).forEach((points, i) => {
         const dashedStar = createDashedStar(points);
         const s = data.stars[i] || { x: (Math.random() - 0.5) * 10, y: (Math.random() - 0.5) * 10 };
-        dashedStar.position.set(data.pos.x + s.x * 6, data.pos.y + s.y * 6, data.pos.z);
+        dashedStar.position.set(data.pos.x + s.x * scale, data.pos.y + s.y * scale, data.pos.z);
         dashedStar.userData = { id: i, mode: 'shape', points: points, filled: false };
         group.add(dashedStar);
         modeState.dashedStars.push(dashedStar);
@@ -328,9 +343,11 @@ function removeShapeIcon(points) {
 // ========================================
 
 function setupTraceMode(data) {
+    const aspect = window.innerWidth / window.innerHeight;
+    const scale = aspect >= 1 ? 4 : 2.8;
     data.stars.forEach((s, i) => {
         const sprite = createSuperStarTexture();
-        sprite.position.set(data.pos.x + s.x * 4, data.pos.y + s.y * 4, data.pos.z);
+        sprite.position.set(data.pos.x + s.x * scale, data.pos.y + s.y * scale, data.pos.z);
         sprite.scale.set(6, 6, 1);
         sprite.userData = { id: i, mode: 'trace' };
         group.add(sprite);
@@ -370,13 +387,17 @@ function createTraceGuideLines() {
 // ========================================
 
 function setupBrightnessMode(data) {
+    const aspect = window.innerWidth / window.innerHeight;
+    // Tighten constellation scale in portrait so stars don't fall off the screen
+    const scale = aspect >= 1 ? 4 : 2.8;
+
     const opacities = [0.3, 0.5, 0.7, 0.9, 1.0];
     const shuffledIndices = opacities.map((_, i) => i).sort(() => Math.random() - 0.5);
     shuffledIndices.slice(0, Math.min(5, data.stars.length)).forEach((idx, i) => {
         const opacity = opacities[idx];
         const sprite = createSuperStarTexture();
         const s = data.stars[i];
-        sprite.position.set(data.pos.x + s.x * 4, data.pos.y + s.y * 4, data.pos.z);
+        sprite.position.set(data.pos.x + s.x * scale, data.pos.y + s.y * scale, data.pos.z);
         sprite.scale.set(6, 6, 1);
         sprite.material.opacity = opacity;
         sprite.userData = { id: i, mode: 'brightness', opacity: opacity, sortOrder: idx };
@@ -394,11 +415,34 @@ function setupBrightnessMode(data) {
 // ========================================
 
 function setupOddOneMode(data) {
+    // The camera flies to data.pos at distance ~40 (z+40 in startup).
+    // Compute the actual visible world dimensions at that distance,
+    // then clamp the target placement to stay safely on-screen.
+
+    const aspect = window.innerWidth / window.innerHeight;
+    const fovDeg = getResponsiveFov();
+    const fovRad = fovDeg * Math.PI / 180;
+    const distance = 40; // matches camera z-offset in setupLevel
+
+    // Visible half-height in world units at this distance
+    const visibleH = 2 * Math.tan(fovRad / 2) * distance;
+    const visibleW = visibleH * aspect;
+
+    // Decoy range is generous — they're allowed to drift slightly off-edge,
+    // and they're just distractions anyway.
+    const xRange = visibleW * 0.95;
+    const yRange = visibleH * 0.85;
+
+    // Target gets a TIGHT range — must always be visible with margin
+    // so it never lands at the edge.
+    const targetXRange = visibleW * 0.55;
+    const targetYRange = visibleH * 0.55;
+
     const decoyCount = 10 + Math.floor(Math.random() * 6);
     for (let i = 0; i < decoyCount; i++) {
         const sprite = createSuperStarTexture();
-        const x = data.pos.x + (Math.random() - 0.5) * 60;
-        const y = data.pos.y + (Math.random() - 0.5) * 40;
+        const x = data.pos.x + (Math.random() - 0.5) * xRange;
+        const y = data.pos.y + (Math.random() - 0.5) * yRange;
         const z = data.pos.z + (Math.random() - 0.5) * 10;
         sprite.position.set(x, y, z);
         sprite.scale.set(5, 5, 1);
@@ -408,8 +452,8 @@ function setupOddOneMode(data) {
         modeState.decoys.push(sprite);
     }
     const target = createRedTargetStar();
-    const tx = data.pos.x + (Math.random() - 0.5) * 60;
-    const ty = data.pos.y + (Math.random() - 0.5) * 40;
+    const tx = data.pos.x + (Math.random() - 0.5) * targetXRange;
+    const ty = data.pos.y + (Math.random() - 0.5) * targetYRange;
     const tz = data.pos.z + (Math.random() - 0.5) * 10;
     target.position.set(tx, ty, tz);
     target.scale.set(7, 7, 1);
@@ -504,6 +548,26 @@ function onMove(e) {
 function onPointerDown(e) {
     if (!isGameActive) return;
     if (typeof alertActive !== 'undefined' && alertActive) return; // alert open — ignore game clicks
+
+    // Android Chrome fires touchstart → then ~300ms later fires a synthetic
+    // mousedown at the LAST KNOWN pointer position. If the finger moved at all
+    // between touchstart and lift-off, the synthetic mousedown lands in the
+    // wrong place, raycaster misses, and we get a false "wrong answer" error.
+    // preventDefault() on the touch event suppresses synthetic mouse emulation.
+    if (e.type === 'touchstart' && e.cancelable) {
+        e.preventDefault();
+    }
+
+    // Also debounce: if a real touchstart just fired, ignore the synthetic
+    // mousedown that may follow even if preventDefault didn't catch it.
+    const now = Date.now();
+    if (e.type === 'mousedown' && window.__lastTouchStart && (now - window.__lastTouchStart) < 500) {
+        return;
+    }
+    if (e.type === 'touchstart') {
+        window.__lastTouchStart = now;
+    }
+
     const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -535,7 +599,7 @@ function onPointerDown(e) {
 
 function handleClassicClick() {
     raycaster.setFromCamera(mouse, camera);
-    raycaster.params.Points.threshold = 3.0;
+    raycaster.params.Points.threshold = _pointsThreshold();
     const intersects = raycaster.intersectObjects(stars);
 
     if (intersects.length > 0) {
@@ -607,6 +671,7 @@ function handleClassicClick() {
 
 function handleTraceStart() {
     raycaster.setFromCamera(mouse, camera);
+    raycaster.params.Points.threshold = _pointsThreshold();
     const intersects = raycaster.intersectObjects(stars);
 
     let validStartStar = null;
@@ -765,6 +830,8 @@ document.addEventListener('touchend', () => { if (modeState.isTracing) { modeSta
 
 function handleBrightnessClick() {
     raycaster.setFromCamera(mouse, camera);
+    // Larger hit radius on touch devices — finger taps are less precise than mouse clicks
+    raycaster.params.Points.threshold = _pointsThreshold();
     const intersects = raycaster.intersectObjects(stars);
 
     if (intersects.length > 0) {
@@ -830,6 +897,10 @@ function handleBrightnessClick() {
 
 function handleOddOneClick() {
     raycaster.setFromCamera(mouse, camera);
+    raycaster.params.Points.threshold = _pointsThreshold();
+    // Sprites (decoys + target) need a different intersection method — they're
+    // Sprite objects, not Points — so the threshold doesn't strictly apply,
+    // but setting it keeps the global state consistent for any subsequent calls.
     const allObjects = [...modeState.decoys, modeState.oddTarget];
     const intersects = raycaster.intersectObjects(allObjects);
     if (intersects.length > 0) {
