@@ -359,7 +359,8 @@ function createShapesBar() {
             clone.style.zIndex = '1000';
             clone.style.width = rect.width + 'px';
             clone.style.height = rect.height + 'px';
-            clone.style.left = (touchStartX - rect.width / 2) + 'px';
+            const bodyLeft = document.body.getBoundingClientRect().left;
+            clone.style.left = (touchStartX - bodyLeft - rect.width / 2) + 'px';
             clone.style.top = (touchStartY - rect.height / 2) + 'px';
             document.body.appendChild(clone);
         }, { passive: true });
@@ -369,7 +370,8 @@ function createShapesBar() {
             if (clone) {
                 const touch = e.touches[0];
                 const rect = clone.getBoundingClientRect();
-                clone.style.left = (touch.clientX - rect.width / 2) + 'px';
+                const bodyLeft = document.body.getBoundingClientRect().left;
+                clone.style.left = (touch.clientX - bodyLeft - rect.width / 2) + 'px';
                 clone.style.top = (touch.clientY - rect.height / 2) + 'px';
             }
         }, { passive: true });
@@ -379,7 +381,7 @@ function createShapesBar() {
             const clone = document.getElementById('drag-clone');
             if (clone) clone.remove();
             const touch = e.changedTouches[0];
-            const x = touch.clientX;
+            const x = touch.clientX - document.body.getBoundingClientRect().left;
             const y = touch.clientY;
             if (modeState.selectedShape) {
                 tryPlaceShape(x, y);

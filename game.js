@@ -1,3 +1,8 @@
+// === Вьюпорт-хелперы: игра живёт в центрированной колонке (body), а не в окне ===
+function VW() { return document.body.clientWidth; }
+function VH() { return document.body.clientHeight; }
+function VX(clientX) { return clientX - document.body.getBoundingClientRect().left; }
+
 // ========================================
 // AUDIO TIZIMI (Tuzatilgan)
 // ========================================
@@ -56,7 +61,7 @@ let modeState = {
 // ========================================
 
 function getResponsiveFov() {
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = VW() / VH();
     // Landscape (aspect > 1): standard FOV 75°
     // Portrait (aspect < 1): scale FOV up so constellations stay visible
     // At aspect 0.5 (very narrow): FOV becomes ~100°
@@ -67,11 +72,11 @@ function getResponsiveFov() {
 function initThree() {
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x000000, 0.001);
-    camera = new THREE.PerspectiveCamera(getResponsiveFov(), window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(getResponsiveFov(), VW() / VH(), 0.1, 1000);
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     // Cap DPR at 2 to avoid huge GPU load on retina phones
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(VW(), VH());
     document.getElementById('bg-canvas').appendChild(renderer.domElement);
 
     const starGeo = new THREE.BufferGeometry();
@@ -162,7 +167,7 @@ function setupLevel(idx) {
 // ========================================
 
 function setupClassicMode(data) {
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = VW() / VH();
     const scale = aspect >= 1 ? 4 : 2.8;
     data.stars.forEach((s, i) => {
         const sprite = createSuperStarTexture();
@@ -184,7 +189,7 @@ function setupClassicMode(data) {
 // ========================================
 
 function setupShapeMode(data) {
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = VW() / VH();
     const scale = aspect >= 1 ? 6 : 4;
 
     const pointCounts = [4, 5, 6, 7, 8];
@@ -216,7 +221,7 @@ function handleShapeDragOver(e) {
 
 function handleShapeDrop(e) {
     e.preventDefault();
-    const x = e.clientX;
+    const x = VX(e.clientX);
     const y = e.clientY;
 
     if (modeState.selectedShape) {
@@ -251,8 +256,8 @@ function createDashedStar(points) {
 function tryPlaceShape(screenX, screenY) {
     if (!modeState.selectedShape) return;
 
-    const ndcX = (screenX / window.innerWidth) * 2 - 1;
-    const ndcY = -(screenY / window.innerHeight) * 2 + 1;
+    const ndcX = (screenX / VW()) * 2 - 1;
+    const ndcY = -(screenY / VH()) * 2 + 1;
 
     let closestStar = null;
     let minDist = 150;
@@ -263,8 +268,8 @@ function tryPlaceShape(screenX, screenY) {
         const worldPos = new THREE.Vector3();
         dashedStar.getWorldPosition(worldPos);
         const screenPos = worldPos.clone().project(camera);
-        const starScreenX = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-        const starScreenY = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
+        const starScreenX = (screenPos.x * 0.5 + 0.5) * VW();
+        const starScreenY = (screenPos.y * -0.5 + 0.5) * VH();
 
         const dist = Math.sqrt(Math.pow(starScreenX - screenX, 2) + Math.pow(starScreenY - screenY, 2));
         if (dist < minDist) {
@@ -299,8 +304,8 @@ function fillDashedStar(dashedStar) {
     const worldPos = new THREE.Vector3();
     realStar.getWorldPosition(worldPos);
     const screenPos = worldPos.clone().project(camera);
-    const screenX = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-    const screenY = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
+    const screenX = (screenPos.x * 0.5 + 0.5) * VW();
+    const screenY = (screenPos.y * -0.5 + 0.5) * VH();
     removeShapeIcon(dashedStar.userData.points);
 
     if (stars.length > 0) {
@@ -343,7 +348,7 @@ function removeShapeIcon(points) {
 // ========================================
 
 function setupTraceMode(data) {
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = VW() / VH();
     const scale = aspect >= 1 ? 4 : 2.8;
     data.stars.forEach((s, i) => {
         const sprite = createSuperStarTexture();
@@ -387,7 +392,7 @@ function createTraceGuideLines() {
 // ========================================
 
 function setupBrightnessMode(data) {
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = VW() / VH();
     // Tighten constellation scale in portrait so stars don't fall off the screen
     const scale = aspect >= 1 ? 4 : 2.8;
 
@@ -419,7 +424,7 @@ function setupOddOneMode(data) {
     // Compute the actual visible world dimensions at that distance,
     // then clamp the target placement to stay safely on-screen.
 
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = VW() / VH();
     const fovDeg = getResponsiveFov();
     const fovRad = fovDeg * Math.PI / 180;
     const distance = 40; // matches camera z-offset in setupLevel
@@ -525,10 +530,10 @@ function onMove(e) {
     }
 
     if (e.type === 'touchmove') e.preventDefault();
-    const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const x = VX(e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
     const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    mouse.x = (x / VW()) * 2 - 1;
+    mouse.y = -(y / VH()) * 2 + 1;
 
     const data = LEVELS[state.currentLevelIndex];
     const mode = data.mode;
@@ -588,10 +593,10 @@ function onPointerDown(e) {
         window.__lastTouchStart = now;
     }
 
-    const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const x = VX(e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
     const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    mouse.x = (x / VW()) * 2 - 1;
+    mouse.y = -(y / VH()) * 2 + 1;
 
     const data = LEVELS[state.currentLevelIndex];
     const mode = data.mode;
@@ -660,8 +665,8 @@ function handleClassicClick() {
             hit.material.color.setHex(0x00ff00);
             gsap.to(hit.scale, { x: 8, y: 8, duration: 0.3, yoyo: true, repeat: 1 });
             updateGlobalUI();
-            const screenX = (mouse.x * 0.5 + 0.5) * window.innerWidth;
-            const screenY = (mouse.y * -0.5 + 0.5) * window.innerHeight;
+            const screenX = (mouse.x * 0.5 + 0.5) * VW();
+            const screenY = (mouse.y * -0.5 + 0.5) * VH();
             if (connected > 0) {
                 const prev = stars[connected - 1].position;
                 const geo = new THREE.BufferGeometry().setFromPoints([prev, hit.position]);
@@ -707,7 +712,7 @@ function handleTraceStart() {
     if (validStartStar) {
         modeState.isTracing = true;
         modeState.traceStartStar = validStartStar;
-        modeState.traceStartPos = { x: (mouse.x * 0.5 + 0.5) * window.innerWidth, y: (mouse.y * -0.5 + 0.5) * window.innerHeight };
+        modeState.traceStartPos = { x: (mouse.x * 0.5 + 0.5) * VW(), y: (mouse.y * -0.5 + 0.5) * VH() };
         modeState.currentPathPoints = [];
         const startWorldPos = new THREE.Vector3();
         modeState.traceStartStar.getWorldPosition(startWorldPos);
@@ -739,7 +744,7 @@ function handleTraceMove(x, y) {
     if (nextIdx >= stars.length) return;
 
     const targetStar = stars[nextIdx];
-    const mouseNDC = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+    const mouseNDC = new THREE.Vector2((x / VW()) * 2 - 1, -(y / VH()) * 2 + 1);
     raycaster.setFromCamera(mouseNDC, camera);
     const startWorldPos = new THREE.Vector3();
     modeState.traceStartStar.getWorldPosition(startWorldPos);
@@ -765,10 +770,10 @@ function handleTraceMove(x, y) {
     const targetVec = new THREE.Vector3();
     targetStar.getWorldPosition(targetVec);
     targetVec.project(camera);
-    const sx = (startVec.x * 0.5 + 0.5) * window.innerWidth;
-    const sy = (startVec.y * -0.5 + 0.5) * window.innerHeight;
-    const tx = (targetVec.x * 0.5 + 0.5) * window.innerWidth;
-    const ty = (targetVec.y * -0.5 + 0.5) * window.innerHeight;
+    const sx = (startVec.x * 0.5 + 0.5) * VW();
+    const sy = (startVec.y * -0.5 + 0.5) * VH();
+    const tx = (targetVec.x * 0.5 + 0.5) * VW();
+    const ty = (targetVec.y * -0.5 + 0.5) * VH();
     const lineLength = Math.sqrt((tx - sx) ** 2 + (ty - sy) ** 2);
     const distance = Math.abs((ty - sy) * x - (tx - sx) * y + tx * sy - ty * sx) / lineLength;
 
@@ -819,8 +824,8 @@ function completeTrace(targetStar) {
     const worldPos = new THREE.Vector3();
     targetStar.getWorldPosition(worldPos);
     const screenPos = worldPos.clone().project(camera);
-    const tx = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-    const ty = (screenPos.y * -0.5 + 0.5) * window.innerHeight;
+    const tx = (screenPos.x * 0.5 + 0.5) * VW();
+    const ty = (screenPos.y * -0.5 + 0.5) * VH();
     connected++;
     modeState.isTracing = false;
     modeState.traceStartStar = null;
@@ -885,8 +890,8 @@ function handleBrightnessClick() {
             gsap.to(hit.scale, { x: 8, y: 8, duration: 0.3, yoyo: true, repeat: 1 });
             updateGlobalUI();
 
-            const screenX = (mouse.x * 0.5 + 0.5) * window.innerWidth;
-            const screenY = (mouse.y * -0.5 + 0.5) * window.innerHeight;
+            const screenX = (mouse.x * 0.5 + 0.5) * VW();
+            const screenY = (mouse.y * -0.5 + 0.5) * VH();
             if (modeState.brightnessClicked > 0) {
                 const prev = stars[modeState.brightnessSequence[modeState.brightnessClicked - 1]].position;
                 const geo = new THREE.BufferGeometry().setFromPoints([prev, hit.position]);
@@ -929,8 +934,8 @@ function handleOddOneClick() {
             hit.material.color.setHex(0x00ff00);
             gsap.to(hit.scale, { x: 10, y: 10, duration: 0.5 });
             updateGlobalUI();
-            const screenX = (mouse.x * 0.5 + 0.5) * window.innerWidth;
-            const screenY = (mouse.y * -0.5 + 0.5) * window.innerHeight;
+            const screenX = (mouse.x * 0.5 + 0.5) * VW();
+            const screenY = (mouse.y * -0.5 + 0.5) * VH();
             isGameActive = false;
             setTimeout(() => { showVictoryModal(state.currentLevelIndex); }, 1000);
         } else {
@@ -993,8 +998,8 @@ function enterConnectMode(pos) {
 
 function resizeRenderer() {
     if (!camera || !renderer) return;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = VW();
+    const h = VH();
     camera.aspect = w / h;
     camera.fov = getResponsiveFov();
     camera.updateProjectionMatrix();
